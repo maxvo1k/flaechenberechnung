@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Implementation-Title: JavaCPP
+Implementation-Version: 0.10
+Archiver-Version: Plexus Archiver
+Built-By: saudet
+Specification-Vendor: Bytedeco
+Specification-Title: JavaCPP
+Class-Path: ./
+Main-Class: org.bytedeco.javacpp.tools.Builder
+Implementation-Vendor: Bytedeco
+Name: org/bytedeco/javacpp/
+Created-By: Apache Maven 3.1.1
+Build-Jdk: 1.8.0_25
+Specification-Version: 0.10
+
