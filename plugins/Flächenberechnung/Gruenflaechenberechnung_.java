@@ -218,7 +218,7 @@ double[] distances_y = {15,30,45,60};
 Point[] points_up = new Point[24];
 Point[] points_down= new Point[24];
 
-//AKWHA II-----------
+//AKWHA II---------------
 
 int AKWHA_II = 2;
 
