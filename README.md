@@ -1,2 +1,2 @@
-# ImageJ
+# ImageJ - Flächenberechnung
  
