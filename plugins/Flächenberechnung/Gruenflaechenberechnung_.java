@@ -773,8 +773,6 @@ int empty_counter = 0;
 		
 		RoiManager roi_manager = new RoiManager();
 		
-		
-		
 		if(CountImages == 0) {
 		
 			InputDialog inputreferencepoint_upleft = new InputDialog("Input", "Bitte Feld oben links mit Punkt auswählen\nPunkt ist bewegbar\nLöschen mit ALT + Klick auf den Punkt", "Baitplates", imp2);
@@ -5175,6 +5173,38 @@ public void loadimagesFixPoints(int CountImages, int project){
 		}
 		
 		return choice;
+	}
+	
+	int[] getBaitplatesBoundaries(int default_down, int default_up) {
+		
+		int boundary_down = 0;
+		int boundary_up = 0;
+		
+		GenericDialog dlg = new GenericDialog("Eingabe Grenzwerte", IJ.getInstance());
+		dlg.addMessage("Bitte obere und untere Grenze eingeben");
+		dlg.addNumericField("Grenze Unten: ", boundary_down, default_down);
+		dlg.addNumericField("Grenze Oben: ", boundary_up, default_up);	
+		dlg.showDialog();
+		
+		boundary_down = (int)dlg.getNextNumber();
+		boundary_up = (int)dlg.getNextNumber();
+		
+		int[] values = new int[2];
+		values[0] = boundary_down;
+		values[1] = boundary_up;
+		
+		return values;
+	}
+	
+	boolean checkBaitplatesBoundaries() {
+		
+		GenericDialog dlg = new GenericDialog("Grenzwerte in Ordnung", IJ.getInstance());
+		dlg.addMessage("Soll mit diesen Grenzwerten berechnet werden?");
+		dlg.enableYesNoCancel();
+		dlg.hideCancelButton();
+		dlg.showDialog();
+		
+		return true;
 	}
 	
 	double getScaleReference(){
