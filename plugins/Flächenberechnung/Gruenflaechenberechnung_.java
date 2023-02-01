@@ -239,6 +239,10 @@ int histogram_reference = 0;
 StringBuilder summary_builder = new StringBuilder();
 int empty_counter = 0;
 
+int boundary_gb_down = 29;
+int boundary_gb_up = 81;
+int boundary_gb_percentage = 15;
+
 	public void run(String arg) {
 		
 		try {
@@ -280,7 +284,6 @@ int empty_counter = 0;
 		if(selection.equals("")){
 			//if (!showInfo("Fehler", "Fehler beim Erstellen des Export-Verzeichnisses")) return;
 		}
-		
 	}
 	
 	public void startBaitplates(){
@@ -1027,6 +1030,142 @@ int empty_counter = 0;
 		
 		summary_builder.append(StartFileName + ",");
 		
+		//---------------------------
+		//so lange durchlaufen lassen, bis Ergebnis annehmbar
+		
+		if(CountImages == 0) {
+			int decision = 0;
+			
+			while(decision < 1 || decision > 1) {
+				int[] boundaries = getBaitplatesBoundaries(boundary_gb_down, boundary_gb_up, boundary_gb_percentage);
+				if(boundaries[0] == -1) {
+					decision = 0;
+				} else {
+					boundary_gb_down = boundaries[0];
+					boundary_gb_up = boundaries[1];
+					boundary_gb_percentage = boundaries[2];
+					
+					IJ.selectWindow("imp_roitest");
+					IJ.run("Remove Overlay", "");
+					imp_roitest.deleteRoi();
+					roi_manager.reset();
+					
+					//Einmal durchlaufen lassen und dann nachfragen ob das so passt
+					
+					for(int k = 0; k < 31; k++) {
+						for(int l = 0; l < 10; l++) {
+							int place = k*10+l;
+							
+							Roi new_roi = new Roi(final_points[place].x-radius, final_points[place].y-radius, 2*radius, 2*radius);
+							final_rois[place] = new_roi;
+							
+							imp_roitest.setRoi(new_roi);		
+							
+							final_images[place] = imp_roitest.crop();
+							
+							final_images[place].show();
+							
+							if(place == 0) {
+								ImageProcessor ip = final_images[place].getProcessor();
+								
+								width = ip.getWidth();
+								height = ip.getHeight();
+								numPixels = width*height;
+							}
+							
+							//Versuch Green Histogramm
+							String savehisto = "";
+							ImageStatistics stats_green;
+							ImageStatistics stats_blue;
+							
+							long[] histogram;
+							long[] histo_green;
+							long[] histo_blue;
+							
+							int channel_green = 2; //Für Green-Channel
+							int channel_blue = 3; //Für Blue-Channel
+							
+							ImageProcessor ip_green = final_images[place].getProcessor();
+
+				            ColorProcessor cp_green = (ColorProcessor)final_images[place].getProcessor();
+				            
+				            ip_green = cp_green.getChannel(channel_green, null);
+				            
+				            ImagePlus imp_green = new ImagePlus("", ip_green);
+				            
+				            stats_green = imp_green.getStatistics(AREA+MEAN+MODE+MIN_MAX, 256, 0.0, 0.0);
+				            
+				            histo_green = stats_green.getHistogram();
+				            
+				            ImageProcessor ip_blue = final_images[place].getProcessor();
+
+				            ColorProcessor cp_blue = (ColorProcessor)final_images[place].getProcessor();
+				            
+				            ip_blue = cp_blue.getChannel(channel_blue, null);
+				            
+				            ImagePlus imp_blue = new ImagePlus("", ip_blue);
+				            
+				            stats_blue = imp_blue.getStatistics(AREA+MEAN+MODE+MIN_MAX, 256, 0.0, 0.0);
+				            
+				            histo_blue = stats_blue.getHistogram();
+				            histogram = histo_blue;
+				            
+				            int histo_sum_greenblue = 0;
+				            
+				            for(int v = 0; v < histo_green.length; v++) {
+				            	histogram[v] = histo_green[v] + histo_blue[v];
+								if(v > boundary_gb_down && v < boundary_gb_up) {
+									histo_sum_greenblue += histogram[v];
+								}
+							}
+				            
+							int[] rgb_values_int = extractPixelValuesNoMaskIntManual(final_images[place]);
+							
+							int[][] rgb_values_complete = extractPixelValuesRGB(final_images[place]);
+							
+							String savepixels = "";
+							
+							int red_pixel_sum = 0;
+							int green_pixel_sum = 0;
+							int blue_pixel_sum = 0;
+							
+							double histo_sum_percentage = histogram_reference/100*boundary_gb_percentage;
+							double histo_sum_percentage_neg = histogram_reference - histo_sum_percentage;
+							double histo_sum_percentage_pos = histogram_reference + histo_sum_percentage;
+
+							if(histo_sum_greenblue >= histo_sum_percentage_neg && histo_sum_greenblue <= histo_sum_percentage_pos) {
+								//leere Felder
+								//summary_empty += ",0";
+								//empty_counter++;
+							} else {
+								//nicht leere Felder
+								//summary_empty += ",1";
+								roi_manager.addRoi(new_roi);
+							}
+							
+							final_images[place].close();			
+							
+						}
+					}
+					
+					roi_manager.runCommand(imp_roitest, "Show All");
+					IJ.run("From ROI Manager", "");
+					
+					decision = checkBaitplatesBoundaries();
+					//IJ.selectWindow("imp_roitest");
+					//IJ.run("Remove Overlay", "");
+					//imp_roitest.deleteRoi();
+					//roi_manager.reset();
+				}
+			}
+			//roimanager reset
+			IJ.selectWindow("imp_roitest");
+			IJ.run("Hide Overlay", "");
+			//imp_roitest.deleteRoi();
+			roi_manager.reset();
+		}
+		//---------------------------
+		
 		for(int k = 0; k < 31; k++) {
 			for(int l = 0; l < 10; l++) {
 				int place = k*10+l;
@@ -1084,6 +1223,7 @@ int empty_counter = 0;
 	            
 	            histo_blue = stats_blue.getHistogram();
 	            histogram = histo_blue;
+	            
 	            int histo_sum_greenblue = 0;
 	            
 	            for(int v = 0; v < histo_green.length; v++) {
@@ -1093,7 +1233,7 @@ int empty_counter = 0;
 					} else {
 						savehisto +=  "," + histogram[v];
 					}
-					if(v > 29 && v < 81) {
+					if(v > boundary_gb_down && v < boundary_gb_up) {
 						histo_sum_greenblue += histogram[v];
 					}
 				}
@@ -1142,11 +1282,9 @@ int empty_counter = 0;
 					roi_manager.addRoi(new_roi);
 				}*/
 				
-				double histo_sum_percentage = histogram_reference/100*15;
+				double histo_sum_percentage = histogram_reference/100*boundary_gb_percentage;
 				double histo_sum_percentage_neg = histogram_reference - histo_sum_percentage;
 				double histo_sum_percentage_pos = histogram_reference + histo_sum_percentage;
-				
-				
 
 				if(histo_sum_greenblue >= histo_sum_percentage_neg && histo_sum_greenblue <= histo_sum_percentage_pos) {
 					//leere Felder
@@ -5175,28 +5313,39 @@ public void loadimagesFixPoints(int CountImages, int project){
 		return choice;
 	}
 	
-	int[] getBaitplatesBoundaries(int default_down, int default_up) {
+	int[] getBaitplatesBoundaries(int default_down, int default_up, int default_perc) {
 		
 		int boundary_down = 0;
 		int boundary_up = 0;
+		int boundary_perc = 0;
 		
 		GenericDialog dlg = new GenericDialog("Eingabe Grenzwerte", IJ.getInstance());
 		dlg.addMessage("Bitte obere und untere Grenze eingeben");
-		dlg.addNumericField("Grenze Unten: ", boundary_down, default_down);
-		dlg.addNumericField("Grenze Oben: ", boundary_up, default_up);	
+		dlg.addNumericField("Untere Grenze: ", default_down, 0, 3, "0 - 255");
+		dlg.addNumericField("Obere Grenze: ", default_up, 0, 3, "0 - 255");	
+		dlg.addNumericField("Toleranz: ", default_perc, 0, 3, "0 - 100 %");
 		dlg.showDialog();
 		
 		boundary_down = (int)dlg.getNextNumber();
 		boundary_up = (int)dlg.getNextNumber();
+		boundary_perc = (int)dlg.getNextNumber();
 		
-		int[] values = new int[2];
-		values[0] = boundary_down;
-		values[1] = boundary_up;
+		int[] values = new int[3];
+		
+		if(boundary_down >= 0 && boundary_down <= 255 && boundary_up >= 0 && boundary_up <= 255 && boundary_perc >= 0 && boundary_perc <= 100) {
+			values[0] = boundary_down;
+			values[1] = boundary_up;
+			values[2] = boundary_perc;
+		} else {
+			values[0] = -1;
+		}
 		
 		return values;
 	}
 	
-	boolean checkBaitplatesBoundaries() {
+	int checkBaitplatesBoundaries() {
+		
+		int value = 0;
 		
 		GenericDialog dlg = new GenericDialog("Grenzwerte in Ordnung", IJ.getInstance());
 		dlg.addMessage("Soll mit diesen Grenzwerten berechnet werden?");
@@ -5204,7 +5353,15 @@ public void loadimagesFixPoints(int CountImages, int project){
 		dlg.hideCancelButton();
 		dlg.showDialog();
 		
-		return true;
+		if (dlg.wasCanceled()) {
+            value = 0;
+		} else if (dlg.wasOKed()) {
+            value = 1;
+		} else {
+            value = 2;
+		}
+		
+		return value;
 	}
 	
 	double getScaleReference(){
