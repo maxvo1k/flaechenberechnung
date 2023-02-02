@@ -1,9 +1,10 @@
 # ImageJ - Flächenberechnung
- 
-- [Flavors \& Branches](#flavors--branches)
-  - [Long Term Support](#long-term-support)
-- [Getting Started](#getting-started)
+
+---
+Bitte komplette Verzeichnis als zip-Datei herunterladen und entpacken oder mit Github-Desktop klonen.
+- [Baitplates](#baitplates)
 
 ---
 
-# Flavors & Branches
+# Baitplates
+
