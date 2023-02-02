@@ -288,11 +288,11 @@ int boundary_gb_percentage = 15;
 	
 	public void startBaitplates(){
 		files = openFiles();
-		for(int c = 31; c > 0; c--) {
-			if(c == 31) {
+		for(int c = 1; c < 32; c++) {
+			if(c == 1) {
 				summary_builder.append("Name," + c + ",");
 			} else {
-				if(c > 1){
+				if(c < 31){
 					summary_builder.append(c + ",");
 				} else {
 					summary_builder.append(c + "\n");
